@@ -28,6 +28,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
+#define LED_BLINK_STK_SIZE 64
+
+OS_STK led_blink_task_stk[LED_BLINK_STK_SIZE];
+static void led_blink_task(void *pdata);
+static void led_init();
 /** @addtogroup Template_Project
   * @{
   */ 
@@ -51,7 +56,7 @@ static void Delay(__IO uint32_t nTime);
   */
 int main(void)
 {
-  GPIO_InitTypeDef GPIO_InitStructure;
+  
  
   /*!< At this stage the microcontroller clock setting is already configured, 
        this is done through SystemInit() function which is called from startup
@@ -73,7 +78,16 @@ int main(void)
 	//////////////////////////////////////////////////////////////////////////////
 	///////                        led blink test                        //////
 	//////////////////////////////////////////////////////////////////////////////
+	led_init();
+	OSInit();
+	OSTaskCreate(led_blink_task, 0, &led_blink_task_stk[LED_BLINK_STK_SIZE-1],10);
+	OSStart();
 	
+}
+
+static void led_init()
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
 	/* Output HSE clock on MCO1 pin(PA8) ****************************************/ 
   /* Enable the GPIOG peripheral */ 
   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG, ENABLE);
@@ -85,8 +99,10 @@ int main(void)
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;  
   GPIO_Init(GPIOG, &GPIO_InitStructure);
-    
-	
+}
+
+static void led_blink()
+{
 	/* Infinite loop */
 	while (1) {
 		// led on
@@ -98,8 +114,16 @@ int main(void)
 		GPIOG->BSRRH = GPIO_Pin_14;
 		Delay(5);
 	}
-  
 }
+
+static void led_blink_task(void *pdata)
+{
+	while(1)
+	{
+		led_blink();
+	}
+}
+	
 
 /**
   * @brief  Inserts a delay time.
